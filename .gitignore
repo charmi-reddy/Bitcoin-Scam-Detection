@@ -1,0 +1,36 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Project-generated artifacts
+models/
+results/
+
+# Local datasets / large data files
+Dataset/
+*.csv
+
+# Local docs / notebooks you may not want in repo
+Untitled.ipynb
+*.docx
+*.pdf
+

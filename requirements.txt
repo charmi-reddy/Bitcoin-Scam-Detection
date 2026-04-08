@@ -1,0 +1,11 @@
+pandas
+numpy
+scikit-learn
+matplotlib
+seaborn
+gensim
+xgboost
+lightgbm
+imbalanced-learn
+joblib 
+pillow
