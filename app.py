@@ -36,7 +36,7 @@ os.makedirs(MODEL_DIR, exist_ok=True)
 os.makedirs(RESULTS_DIR, exist_ok=True)
 
 ADMIN_CREDENTIALS = {"username": "admin", "password": "admin"}
-USER_CREDENTIALS = {"username": "user", "password": "user"}
+USER_REGISTRY = {"user": "user"}
 
 FLASH_GRAPH_NAMES = [
     "Distribution: Scam vs Legit",
@@ -84,16 +84,66 @@ def require_role(session, allowed):
 
 def login(role, username, password, session):
     session = session or init_session()
-    creds = ADMIN_CREDENTIALS if role == "ADMIN" else USER_CREDENTIALS
-    if username == creds["username"] and password == creds["password"]:
+    if role == "ADMIN":
+        valid = username == ADMIN_CREDENTIALS["username"] and password == ADMIN_CREDENTIALS["password"]
+    else:
+        valid = USER_REGISTRY.get(username) == password
+    if valid:
         session["logged_in"] = True
         session["role"] = role
         return session, f"Logged in as {role}"
     return session, "Invalid credentials."
 
 
+def signup(username, password, confirm_password):
+    if not username or not password:
+        return "Username and password are required."
+    if username.lower() == ADMIN_CREDENTIALS["username"]:
+        return "This username is reserved."
+    if password != confirm_password:
+        return "Passwords do not match."
+    if username in USER_REGISTRY:
+        return "Username already exists. Please login."
+    USER_REGISTRY[username] = password
+    return "Signup successful. You can now login as USER."
+
+
 def logout(session):
     return init_session(), "Logged out. Please login again."
+
+
+def show_guide_content():
+    return gr.update(visible=True)
+
+
+def handle_login(role, username, password, session):
+    session, status = login(role, username, password, session)
+    if session.get("logged_in"):
+        return (
+            session,
+            status,
+            gr.update(visible=False),
+            gr.update(visible=True),
+            f"Welcome, {session['role']}",
+        )
+    return (
+        session,
+        status,
+        gr.update(visible=True),
+        gr.update(visible=False),
+        "Not logged in",
+    )
+
+
+def handle_logout(session):
+    session, status = logout(session)
+    return (
+        session,
+        status,
+        gr.update(visible=True),
+        gr.update(visible=False),
+        "Not logged in",
+    )
 
 
 def upload_dataset(file_obj, session):
@@ -523,63 +573,88 @@ with gr.Blocks(title="Bitcoin Scam Detection (Gradio)") as demo:
     session_state = gr.State(init_session())
 
     gr.Markdown("# Bitcoin Scam Detection")
-    gr.Markdown(GUIDE_TEXT)
 
-    with gr.Row():
-        role = gr.Radio(["ADMIN", "USER"], value="ADMIN", label="Role")
-        username = gr.Textbox(label="Username")
-        password = gr.Textbox(label="Password", type="password")
-    with gr.Row():
-        login_btn = gr.Button("Login")
-        logout_btn = gr.Button("Logout")
-    login_status = gr.Textbox(label="Session Status", interactive=False, value="Please login.")
+    with gr.Column(visible=True) as auth_page:
+        gr.Markdown("## Login / Signup")
+        guide_btn = gr.Button("Show Guide")
+        guide_markdown = gr.Markdown(GUIDE_TEXT, visible=False)
 
-    with gr.Tab("Admin Workflow"):
-        dataset_file = gr.File(label="Upload Dataset CSV", file_types=[".csv"], type="filepath")
-        upload_btn = gr.Button("Upload Dataset")
-        preprocess_btn = gr.Button("Preprocess Dataset")
-        split_btn = gr.Button("Dataset Splitting")
-        dataset_status = gr.Textbox(label="Workflow Status", interactive=False)
-        dataset_preview = gr.Dataframe(label="Dataset Preview", interactive=False)
+        with gr.Group():
+            gr.Markdown("### Login")
+            with gr.Row():
+                role = gr.Radio(["ADMIN", "USER"], value="ADMIN", label="Role")
+                username = gr.Textbox(label="Username")
+                password = gr.Textbox(label="Password", type="password")
+            login_btn = gr.Button("Login")
 
+        with gr.Group():
+            gr.Markdown("### Signup (USER only)")
+            with gr.Row():
+                signup_username = gr.Textbox(label="New Username")
+                signup_password = gr.Textbox(label="New Password", type="password")
+                signup_confirm = gr.Textbox(label="Confirm Password", type="password")
+            signup_btn = gr.Button("Signup")
+            signup_status = gr.Textbox(label="Signup Status", interactive=False)
+
+        login_status = gr.Textbox(label="Session Status", interactive=False, value="Please login.")
+
+    with gr.Column(visible=False) as operations_page:
         with gr.Row():
-            train_xgb_btn = gr.Button("Train XGBoost")
-            train_lgb_btn = gr.Button("Train LightGBM")
-            train_ada_btn = gr.Button("Train AdaBoost")
-            train_stack_btn = gr.Button("Train Stacking SGD_PAC")
-        train_logs = gr.Textbox(label="Training Output", lines=14, interactive=False)
+            ops_role_status = gr.Markdown("Not logged in")
+            logout_btn = gr.Button("Logout")
 
-    with gr.Tab("Flash Graphs"):
-        with gr.Row():
-            flash_dd = gr.Dropdown(choices=FLASH_GRAPH_NAMES, value=FLASH_GRAPH_NAMES[0], label="Flash Graphs")
-            prev_btn = gr.Button("<")
-            next_btn = gr.Button(">")
-        flash_plot = gr.Plot(label="Graph")
-        flash_status = gr.Textbox(label="Graph Status", interactive=False)
+        with gr.Tab("Admin Workflow"):
+            dataset_file = gr.File(label="Upload Dataset CSV", file_types=[".csv"], type="filepath")
+            upload_btn = gr.Button("Upload Dataset")
+            preprocess_btn = gr.Button("Preprocess Dataset")
+            split_btn = gr.Button("Dataset Splitting")
+            dataset_status = gr.Textbox(label="Workflow Status", interactive=False)
+            dataset_preview = gr.Dataframe(label="Dataset Preview", interactive=False)
 
-    with gr.Tab("Model Graphs"):
-        model_selector = gr.Dropdown(choices=list(MODEL_TO_ALGO.keys()), label="Model")
-        refresh_model_graphs_btn = gr.Button("Refresh Model Graph List")
-        model_graph_dd = gr.Dropdown(choices=[], label="Available Graphs")
-        open_model_graph_btn = gr.Button("Open Selected Graph")
-        model_graph_image = gr.Image(label="Model Graph")
-        model_graph_status = gr.Textbox(label="Model Graph Status", interactive=False)
+            with gr.Row():
+                train_xgb_btn = gr.Button("Train XGBoost")
+                train_lgb_btn = gr.Button("Train LightGBM")
+                train_ada_btn = gr.Button("Train AdaBoost")
+                train_stack_btn = gr.Button("Train Stacking SGD_PAC")
+            train_logs = gr.Textbox(label="Training Output", lines=14, interactive=False)
 
-    with gr.Tab("Prediction"):
-        test_file = gr.File(label="Upload Test CSV", file_types=[".csv"], type="filepath")
-        predict_btn = gr.Button("Predict")
-        predict_status = gr.Textbox(label="Prediction Status", lines=8, interactive=False)
-        predict_table = gr.Dataframe(label="Predictions", interactive=False)
+        with gr.Tab("Flash Graphs"):
+            with gr.Row():
+                flash_dd = gr.Dropdown(choices=FLASH_GRAPH_NAMES, value=FLASH_GRAPH_NAMES[0], label="Flash Graphs")
+                prev_btn = gr.Button("<")
+                next_btn = gr.Button(">")
+            flash_plot = gr.Plot(label="Graph")
+            flash_status = gr.Textbox(label="Graph Status", interactive=False)
 
+        with gr.Tab("Model Graphs"):
+            model_selector = gr.Dropdown(choices=list(MODEL_TO_ALGO.keys()), label="Model")
+            refresh_model_graphs_btn = gr.Button("Refresh Model Graph List")
+            model_graph_dd = gr.Dropdown(choices=[], label="Available Graphs")
+            open_model_graph_btn = gr.Button("Open Selected Graph")
+            model_graph_image = gr.Image(label="Model Graph")
+            model_graph_status = gr.Textbox(label="Model Graph Status", interactive=False)
+
+        with gr.Tab("Prediction"):
+            test_file = gr.File(label="Upload Test CSV", file_types=[".csv"], type="filepath")
+            predict_btn = gr.Button("Predict")
+            predict_status = gr.Textbox(label="Prediction Status", lines=8, interactive=False)
+            predict_table = gr.Dataframe(label="Predictions", interactive=False)
+
+    guide_btn.click(show_guide_content, outputs=[guide_markdown])
+    signup_btn.click(
+        signup,
+        inputs=[signup_username, signup_password, signup_confirm],
+        outputs=[signup_status],
+    )
     login_btn.click(
-        login,
+        handle_login,
         inputs=[role, username, password, session_state],
-        outputs=[session_state, login_status],
+        outputs=[session_state, login_status, auth_page, operations_page, ops_role_status],
     )
     logout_btn.click(
-        logout,
+        handle_logout,
         inputs=[session_state],
-        outputs=[session_state, login_status],
+        outputs=[session_state, login_status, auth_page, operations_page, ops_role_status],
     )
 
     upload_btn.click(
