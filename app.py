@@ -53,6 +53,54 @@ graph_viewer_window = None
 graph_canvas_container = None
 graph_canvas_widget = None
 graph_viewer_status_label = None
+current_role = None
+current_theme = 'light'
+login_screen_frame = None
+dashboard_sections = []
+role_status_label = None
+theme_toggle_button = None
+guide_button = None
+logout_button = None
+graph_prev_button = None
+graph_next_button = None
+active_login_window = None
+
+THEMES = {
+    'light': {
+        'window_bg': '#EEF4FF',
+        'header_bg': '#133E87',
+        'header_fg': '#FFFFFF',
+        'card_bg': '#FFFFFF',
+        'panel_bg': '#DDEBFF',
+        'panel_fg': '#102542',
+        'muted_fg': '#385170',
+        'button_bg': '#133E87',
+        'button_fg': '#FFFFFF',
+        'button_active_bg': '#0E2E66',
+        'action_bg': '#E8F1FF',
+        'action_fg': '#102542',
+        'action_active_bg': '#C6DDFF',
+        'output_bg': '#0B1D3A',
+        'output_fg': '#E9F1FF',
+    },
+    'dark': {
+        'window_bg': '#0E1525',
+        'header_bg': '#1E2A44',
+        'header_fg': '#F4F7FF',
+        'card_bg': '#17233A',
+        'panel_bg': '#1A2942',
+        'panel_fg': '#E3ECFF',
+        'muted_fg': '#A8B7D9',
+        'button_bg': '#3D6ED4',
+        'button_fg': '#FFFFFF',
+        'button_active_bg': '#2F58AF',
+        'action_bg': '#243754',
+        'action_fg': '#E3ECFF',
+        'action_active_bg': '#2F4668',
+        'output_bg': '#061125',
+        'output_fg': '#DDE7FF',
+    }
+}
 
 global MODEL_DIR, filename, X, Y, model, categories
 
@@ -294,9 +342,9 @@ def ensure_graph_viewer():
     graph_viewer_window = tk.Toplevel(main)
     graph_viewer_window.title("Graph Viewer")
     graph_viewer_window.geometry("1100x700")
-    graph_viewer_window.configure(bg='#EEF4FF')
+    graph_viewer_window.configure(bg=theme_value('window_bg'))
 
-    viewer_outer = tk.Frame(graph_viewer_window, bg='#EEF4FF')
+    viewer_outer = tk.Frame(graph_viewer_window, bg=theme_value('window_bg'))
     viewer_outer.pack(fill=tk.BOTH, expand=True, padx=12, pady=12)
 
     tk.Button(
@@ -305,8 +353,8 @@ def ensure_graph_viewer():
         command=show_previous_graph,
         font=('Segoe UI Bold', 15),
         width=3,
-        bg='#DDE8FF',
-        fg='#102542',
+        bg=theme_value('action_bg'),
+        fg=theme_value('action_fg'),
         relief='flat',
         cursor='hand2'
     ).pack(side=tk.LEFT, fill=tk.Y, padx=(0, 8))
@@ -320,8 +368,8 @@ def ensure_graph_viewer():
         command=show_next_graph,
         font=('Segoe UI Bold', 15),
         width=3,
-        bg='#DDE8FF',
-        fg='#102542',
+        bg=theme_value('action_bg'),
+        fg=theme_value('action_fg'),
         relief='flat',
         cursor='hand2'
     ).pack(side=tk.LEFT, fill=tk.Y, padx=(8, 0))
@@ -329,8 +377,8 @@ def ensure_graph_viewer():
     graph_viewer_status_label = tk.Label(
         graph_viewer_window,
         text='',
-        bg='#EEF4FF',
-        fg='#385170',
+        bg=theme_value('window_bg'),
+        fg=theme_value('muted_fg'),
         font=('Segoe UI', 10)
     )
     graph_viewer_status_label.pack(pady=(0, 10))
@@ -483,6 +531,9 @@ def Train_Test_split():
 
     text.delete('1.0', END)
     global X, y, x_train, x_test, y_train, y_test
+    if 'X' not in globals() or 'y' not in globals():
+        messagebox.showerror("Read the Guide", "Read the Guide")
+        return
 
     x_train, x_test, y_train, y_test = train_test_split(
         X,
@@ -880,48 +931,191 @@ def center_window(win, width, height):
     win.geometry(f"{width}x{height}+{x_coord}+{y_coord}")
 
 
+def theme_value(key):
+    return THEMES[current_theme][key]
+
+
+def apply_theme():
+    main.config(bg=theme_value('window_bg'))
+    header_frame.config(bg=theme_value('window_bg'))
+    title.config(bg=theme_value('header_bg'), fg=theme_value('header_fg'))
+
+    top_controls_frame.config(bg=theme_value('window_bg'))
+    role_status_label.config(bg=theme_value('window_bg'), fg=theme_value('panel_fg'))
+    theme_toggle_button.config(
+        bg=theme_value('button_bg'),
+        fg=theme_value('button_fg'),
+        activebackground=theme_value('button_active_bg'),
+        activeforeground=theme_value('button_fg')
+    )
+    guide_button.config(
+        bg=theme_value('button_bg'),
+        fg=theme_value('button_fg'),
+        activebackground=theme_value('button_active_bg'),
+        activeforeground=theme_value('button_fg')
+    )
+    logout_button.config(
+        bg=theme_value('button_bg'),
+        fg=theme_value('button_fg'),
+        activebackground=theme_value('button_active_bg'),
+        activeforeground=theme_value('button_fg')
+    )
+
+    graph_frame.config(bg=theme_value('panel_bg'))
+    graph_title_label.config(bg=theme_value('panel_bg'), fg=theme_value('panel_fg'))
+    graph_trigger_button.config(
+        bg=theme_value('button_bg'),
+        fg=theme_value('button_fg'),
+        activebackground=theme_value('button_active_bg'),
+        activeforeground=theme_value('button_fg')
+    )
+    graph_prev_button.config(bg=theme_value('action_bg'), fg=theme_value('action_fg'))
+    graph_next_button.config(bg=theme_value('action_bg'), fg=theme_value('action_fg'))
+    graph_selected_label.config(bg=theme_value('panel_bg'), fg=theme_value('muted_fg'))
+    graph_status_label.config(bg=theme_value('panel_bg'), fg=theme_value('muted_fg'))
+
+    output_frame.config(bg=theme_value('window_bg'))
+    text.config(bg=theme_value('output_bg'), fg=theme_value('output_fg'), insertbackground=theme_value('output_fg'))
+
+    action_frame.config(bg=theme_value('window_bg'))
+    for widget in action_frame.winfo_children():
+        if isinstance(widget, tk.Button):
+            widget.config(
+                bg=theme_value('action_bg'),
+                fg=theme_value('action_fg'),
+                activebackground=theme_value('action_active_bg'),
+                activeforeground=theme_value('action_fg')
+            )
+
+    if login_screen_frame and login_screen_frame.winfo_exists():
+        login_screen_frame.config(bg=theme_value('window_bg'))
+        login_card.config(bg=theme_value('card_bg'))
+        login_heading_label.config(bg=theme_value('card_bg'), fg=theme_value('panel_fg'))
+        login_hint_label.config(bg=theme_value('card_bg'), fg=theme_value('muted_fg'))
+        login_admin_button.config(bg='#9AD0C2', fg='#0B3D2E')
+        login_user_button.config(bg='#FFD6A5', fg='#5A3000')
+        login_guide_button.config(
+            bg=theme_value('button_bg'),
+            fg=theme_value('button_fg'),
+            activebackground=theme_value('button_active_bg'),
+            activeforeground=theme_value('button_fg')
+        )
+        login_theme_button.config(
+            bg=theme_value('button_bg'),
+            fg=theme_value('button_fg'),
+            activebackground=theme_value('button_active_bg'),
+            activeforeground=theme_value('button_fg')
+        )
+
+    if graph_viewer_window and graph_viewer_window.winfo_exists():
+        graph_viewer_window.config(bg=theme_value('window_bg'))
+        if graph_viewer_status_label and graph_viewer_status_label.winfo_exists():
+            graph_viewer_status_label.config(bg=theme_value('window_bg'), fg=theme_value('muted_fg'))
+
+    if active_login_window and active_login_window.winfo_exists():
+        active_login_window.config(bg=theme_value('window_bg'))
+
+
+def toggle_theme():
+    global current_theme
+    current_theme = 'dark' if current_theme == 'light' else 'light'
+    theme_toggle_button.config(text=f"Theme: {current_theme.title()}")
+    login_theme_button.config(text=f"Theme: {current_theme.title()}")
+    apply_theme()
+    main.update_idletasks()
+
+
+def show_login_screen():
+    for section in dashboard_sections:
+        section.pack_forget()
+    login_screen_frame.pack(fill=tk.BOTH, expand=True)
+
+
+def show_dashboard():
+    login_screen_frame.pack_forget()
+    header_frame.pack(fill=tk.X, padx=14, pady=(14, 8))
+    top_controls_frame.pack(fill=tk.X, padx=14, pady=(2, 8))
+    action_frame.pack(fill=tk.X, padx=14, pady=6)
+    graph_frame.pack(fill=tk.X, padx=14, pady=(6, 10))
+    output_frame.pack(fill=tk.BOTH, expand=True, padx=14, pady=(0, 14))
+
+
+def logout():
+    global current_role, current_plot_registry, current_plot_index, graph_canvas_widget, active_login_window
+    current_role = None
+    clear_buttons()
+    current_plot_registry = []
+    current_plot_index = 0
+    configure_graph_controls([])
+    role_status_label.config(text='Not logged in')
+    text.delete('1.0', END)
+    if graph_viewer_window and graph_viewer_window.winfo_exists():
+        graph_viewer_window.destroy()
+    graph_canvas_widget = None
+    if active_login_window and active_login_window.winfo_exists():
+        active_login_window.destroy()
+    active_login_window = None
+    show_login_screen()
+    apply_theme()
+
+
+def require_training_ready():
+    required = ['df', 'X', 'y', 'x_train', 'x_test', 'y_train', 'y_test']
+    for item in required:
+        if item not in globals():
+            messagebox.showerror("Read the Guide", "Read the Guide")
+            return False
+    return True
+
+
 def authenticate(role):
+    global active_login_window
     login_win = tk.Toplevel(main)
+    active_login_window = login_win
     login_win.title(f"{role} Login")
-    login_win.configure(bg='#F4F8FF')
+    login_win.configure(bg=theme_value('window_bg'))
     login_win.resizable(False, False)
     center_window(login_win, 400, 320)
     login_win.grab_set()
     login_win.transient(main)
+    login_win.protocol("WM_DELETE_WINDOW", lambda: _close_login_window(login_win))
 
-    login_card = tk.Frame(login_win, bg='white', bd=1, relief='solid')
+    login_card = tk.Frame(login_win, bg=theme_value('card_bg'), bd=1, relief='solid')
     login_card.place(relx=0.5, rely=0.5, anchor='center', width=320, height=250)
 
     tk.Label(
         login_card,
         text=f"{role} Login",
-        bg='white',
-        fg='#133E87',
+        bg=theme_value('card_bg'),
+        fg=theme_value('panel_fg'),
         font=('Segoe UI Semibold', 14)
     ).pack(pady=(16, 10))
 
-    tk.Label(login_card, text="Username", bg='white', fg='#3A4A66', font=('Segoe UI', 10)).pack(anchor='w', padx=30)
+    tk.Label(login_card, text="Username", bg=theme_value('card_bg'), fg=theme_value('muted_fg'), font=('Segoe UI', 10)).pack(anchor='w', padx=30)
     username_entry = tk.Entry(login_card, font=('Segoe UI', 10), relief='solid', bd=1)
     username_entry.pack(fill=tk.X, padx=30, pady=(4, 10))
 
-    tk.Label(login_card, text="Password", bg='white', fg='#3A4A66', font=('Segoe UI', 10)).pack(anchor='w', padx=30)
+    tk.Label(login_card, text="Password", bg=theme_value('card_bg'), fg=theme_value('muted_fg'), font=('Segoe UI', 10)).pack(anchor='w', padx=30)
     password_entry = tk.Entry(login_card, show="*", font=('Segoe UI', 10), relief='solid', bd=1)
     password_entry.pack(fill=tk.X, padx=30, pady=(4, 14))
 
     def check_login():
+        global active_login_window
         username = username_entry.get()
         password = password_entry.get()
 
         if role == "ADMIN":
             if username == ADMIN_CREDENTIALS["username"] and password == ADMIN_CREDENTIALS["password"]:
                 login_win.destroy()
-                show_admin_buttons()
+                active_login_window = None
+                complete_login("ADMIN")
             else:
                 messagebox.showerror("Error", "Invalid Admin credentials!")
         elif role == "USER":
             if username == USER_CREDENTIALS["username"] and password == USER_CREDENTIALS["password"]:
                 login_win.destroy()
-                show_user_buttons()
+                active_login_window = None
+                complete_login("USER")
             else:
                 messagebox.showerror("Error", "Invalid User credentials!")
 
@@ -930,10 +1124,10 @@ def authenticate(role):
         text="Login",
         command=check_login,
         font=('Segoe UI Semibold', 10),
-        bg='#133E87',
-        fg='white',
-        activebackground='#0E2E66',
-        activeforeground='white',
+        bg=theme_value('button_bg'),
+        fg=theme_value('button_fg'),
+        activebackground=theme_value('button_active_bg'),
+        activeforeground=theme_value('button_fg'),
         relief='flat',
         cursor='hand2',
         padx=10,
@@ -944,21 +1138,42 @@ def authenticate(role):
     login_win.bind('<Return>', lambda event: check_login())
 
 
+def complete_login(role):
+    global current_role
+    current_role = role
+    role_status_label.config(text=f"Signed in as: {role}")
+    show_dashboard()
+    if role == "ADMIN":
+        show_admin_buttons()
+    else:
+        show_user_buttons()
+    apply_theme()
+
+
+def _close_login_window(login_win):
+    global active_login_window
+    if login_win and login_win.winfo_exists():
+        login_win.destroy()
+    active_login_window = None
+
+
 def show_guide():
     guide_text = (
-        "Recommended App Flow\n\n"
+        "Recommended App Flow (Use This Order)\n\n"
         "Admin Flow:\n"
-        "1. Click ADMIN and login.\n"
-        "2. Click Upload Dataset.\n"
+        "1. Login as ADMIN.\n"
+        "2. Click Upload Dataset FIRST.\n"
         "3. Click Preprocess Dataset.\n"
         "4. Click Dataset Splitting.\n"
-        "5. Train one or more models.\n"
-        "6. Hover on Train XGBoost/LightGBM/AdaBoost/Stacking to choose model-specific graphs.\n"
-        "7. Use Flash Graphs to inspect EDA and performance charts.\n\n"
+        "5. Then click Train XGBoost / Train LightGBM / Train AdaBoost / Train Stacking.\n"
+        "6. Hover on training buttons to open model-specific graph list.\n"
+        "7. Use Flash Graphs for EDA and comparison charts.\n\n"
         "User Flow:\n"
-        "1. Click USER and login.\n"
+        "1. Login as USER.\n"
         "2. Click Predict on Test Data.\n"
         "3. Use Flash Graphs to open model performance graph.\n\n"
+        "Important:\n"
+        "- If training is clicked before upload/preprocess/split, app will show: Read the Guide.\n\n"
         "Graph Controls:\n"
         "- Hover over Flash Graphs to see available plots.\n"
         "- Hover over model training buttons to see model graph options.\n"
@@ -968,26 +1183,26 @@ def show_guide():
 
     guide_win = tk.Toplevel(main)
     guide_win.title("Usage Guide")
-    guide_win.configure(bg='#F4F8FF')
+    guide_win.configure(bg=theme_value('window_bg'))
     guide_win.resizable(False, False)
     center_window(guide_win, 520, 430)
     guide_win.transient(main)
 
-    guide_card = tk.Frame(guide_win, bg='white', bd=1, relief='solid')
+    guide_card = tk.Frame(guide_win, bg=theme_value('card_bg'), bd=1, relief='solid')
     guide_card.pack(fill=tk.BOTH, expand=True, padx=16, pady=16)
 
     tk.Label(
         guide_card,
         text='How To Use This Dashboard',
-        bg='white',
-        fg='#133E87',
+        bg=theme_value('card_bg'),
+        fg=theme_value('panel_fg'),
         font=('Segoe UI Semibold', 14)
     ).pack(pady=(14, 10))
 
     guide_box = Text(
         guide_card,
-        bg='white',
-        fg='#102542',
+        bg=theme_value('card_bg'),
+        fg=theme_value('panel_fg'),
         font=('Segoe UI', 10),
         wrap='word',
         relief='flat',
@@ -1002,26 +1217,26 @@ def show_guide():
 def show_admin_buttons():
     clear_buttons()
     create_action_button('Upload Dataset', uploadDataset)
-    create_action_button('Preprocess Dataset', lambda: preprocess_data_word2vec(df))
+    create_action_button('Preprocess Dataset', lambda: preprocess_data_word2vec(df) if 'df' in globals() else messagebox.showerror("Read the Guide", "Read the Guide"))
     create_action_button('Dataset Splitting', Train_Test_split)
     create_model_action_button(
         'Train XGBoost',
-        lambda: train_xgboost_classifier_tkinter(x_train, y_train, x_test, y_test),
+        lambda: train_xgboost_classifier_tkinter(x_train, y_train, x_test, y_test) if require_training_ready() else None,
         'XGBoost Classifier'
     )
     create_model_action_button(
         'Train LightGBM',
-        lambda: train_lightgbm_classifier_tkinter(x_train, y_train, x_test, y_test),
+        lambda: train_lightgbm_classifier_tkinter(x_train, y_train, x_test, y_test) if require_training_ready() else None,
         'LightGBM Classifier'
     )
     create_model_action_button(
         'Train AdaBoost',
-        lambda: train_adaboost_classifier_tkinter(x_train, y_train, x_test, y_test),
+        lambda: train_adaboost_classifier_tkinter(x_train, y_train, x_test, y_test) if require_training_ready() else None,
         'AdaBoost Classifier'
     )
     create_model_action_button(
         'Train Stacking SGD_PAC',
-        lambda: train_stacking_sgd_pac_tkinter(x_train, y_train, x_test, y_test),
+        lambda: train_stacking_sgd_pac_tkinter(x_train, y_train, x_test, y_test) if require_training_ready() else None,
         'Stacking Classifier (SGD + PAC)'
     )
     configure_graph_controls([
@@ -1037,7 +1252,7 @@ def show_admin_buttons():
 def show_user_buttons():
     clear_buttons()
     create_action_button('Predict on Test Data', predict_testdata_tkinter)
-    create_action_button('Exit', close)
+    create_action_button('Logout', logout)
     configure_graph_controls([
         ('Model Performance Comparison', plot_model_performance_tkinter),
     ])
@@ -1077,7 +1292,7 @@ def create_model_action_button(label, command, algorithm_name):
 main = tk.Tk()
 main.title('Bitcoin Scam Detection')
 main.geometry('1240x760')
-main.config(bg='#EEF4FF')
+main.config(bg=theme_value('window_bg'))
 
 
 def scroll_title(text, label, delay=200):
@@ -1094,40 +1309,32 @@ button_font = ('Segoe UI Semibold', 10)
 text_font = ('Consolas', 10)
 label_font = ('Segoe UI', 10)
 
-header_frame = tk.Frame(main, bg='#EEF4FF')
-header_frame.pack(fill=tk.X, padx=14, pady=(14, 8))
+login_screen_frame = tk.Frame(main, bg=theme_value('window_bg'))
+login_card = tk.Frame(login_screen_frame, bg=theme_value('card_bg'), bd=1, relief='solid')
+login_card.place(relx=0.5, rely=0.5, anchor='center', width=460, height=300)
 
-title = Label(
-    header_frame,
+login_heading_label = tk.Label(
+    login_card,
     text='Bitcoin Scam Detection',
-    bg='#133E87',
-    fg='white',
-    font=title_font,
-    pady=12,
-    padx=12
+    bg=theme_value('card_bg'),
+    fg=theme_value('panel_fg'),
+    font=('Segoe UI Semibold', 18)
 )
-title.pack(fill=tk.X)
+login_heading_label.pack(pady=(20, 10))
 
-scroll_title('   Bitcoin Scam Detection Dashboard   ', title, delay=200)
+login_hint_label = tk.Label(
+    login_card,
+    text='Login as Admin or User to open the dashboard',
+    bg=theme_value('card_bg'),
+    fg=theme_value('muted_fg'),
+    font=('Segoe UI', 10)
+)
+login_hint_label.pack(pady=(0, 14))
 
-role_frame = tk.Frame(main, bg='#EEF4FF')
-role_frame.pack(fill=tk.X, padx=14, pady=8)
+login_buttons_row = tk.Frame(login_card, bg=theme_value('card_bg'))
+login_buttons_row.pack(pady=(0, 10))
 
-role_card = tk.Frame(role_frame, bg='white', bd=1, relief='solid')
-role_card.pack(pady=6, ipadx=12, ipady=12)
-
-tk.Label(
-    role_card,
-    text='Choose Login Type',
-    bg='white',
-    fg='#133E87',
-    font=('Segoe UI Semibold', 14)
-).pack(pady=(8, 12))
-
-login_buttons_row = tk.Frame(role_card, bg='white')
-login_buttons_row.pack(pady=(0, 8))
-
-admin_button = tk.Button(
+login_admin_button = tk.Button(
     login_buttons_row,
     text='ADMIN LOGIN',
     command=lambda: authenticate('ADMIN'),
@@ -1139,9 +1346,9 @@ admin_button = tk.Button(
     cursor='hand2',
     pady=8
 )
-admin_button.pack(side=tk.LEFT, padx=(0, 8))
+login_admin_button.pack(side=tk.LEFT, padx=(0, 8))
 
-user_button = tk.Button(
+login_user_button = tk.Button(
     login_buttons_row,
     text='USER LOGIN',
     command=lambda: authenticate('USER'),
@@ -1153,40 +1360,138 @@ user_button = tk.Button(
     cursor='hand2',
     pady=8
 )
-user_button.pack(side=tk.LEFT, padx=(8, 0))
+login_user_button.pack(side=tk.LEFT, padx=(8, 0))
 
-tk.Button(
-    role_card,
+login_helpers_row = tk.Frame(login_card, bg=theme_value('card_bg'))
+login_helpers_row.pack(pady=(8, 0))
+
+login_guide_button = tk.Button(
+    login_helpers_row,
     text='Guide',
     command=show_guide,
     font=button_font,
-    bg='#133E87',
-    fg='white',
-    activebackground='#0E2E66',
-    activeforeground='white',
+    bg=theme_value('button_bg'),
+    fg=theme_value('button_fg'),
+    activebackground=theme_value('button_active_bg'),
+    activeforeground=theme_value('button_fg'),
     relief='flat',
     cursor='hand2',
     padx=16,
     pady=6
-).pack()
+)
+login_guide_button.pack(side=tk.LEFT, padx=(0, 8))
 
-action_frame = tk.Frame(main, bg='#EEF4FF')
-action_frame.pack(fill=tk.X, padx=14, pady=6)
+login_theme_button = tk.Button(
+    login_helpers_row,
+    text=f"Theme: {current_theme.title()}",
+    command=toggle_theme,
+    font=button_font,
+    bg=theme_value('button_bg'),
+    fg=theme_value('button_fg'),
+    activebackground=theme_value('button_active_bg'),
+    activeforeground=theme_value('button_fg'),
+    relief='flat',
+    cursor='hand2',
+    padx=12,
+    pady=6
+)
+login_theme_button.pack(side=tk.LEFT)
 
-graph_frame = tk.Frame(main, bg='#DDEBFF', bd=1, relief='solid')
-graph_frame.pack(fill=tk.X, padx=14, pady=(6, 10))
+header_frame = tk.Frame(main, bg=theme_value('window_bg'))
 
-tk.Label(graph_frame, text='Graph Controls', font=('Segoe UI Semibold', 11), bg='#DDEBFF', fg='#102542').pack(side=tk.LEFT, padx=(10, 8), pady=8)
+title = Label(
+    header_frame,
+    text='Bitcoin Scam Detection',
+    bg=theme_value('header_bg'),
+    fg=theme_value('header_fg'),
+    font=title_font,
+    pady=12,
+    padx=12
+)
+title.pack(fill=tk.X)
+
+scroll_title('   Bitcoin Scam Detection Dashboard   ', title, delay=200)
+
+top_controls_frame = tk.Frame(main, bg=theme_value('window_bg'))
+role_status_label = tk.Label(
+    top_controls_frame,
+    text='Not logged in',
+    bg=theme_value('window_bg'),
+    fg=theme_value('panel_fg'),
+    font=('Segoe UI Semibold', 10)
+)
+role_status_label.pack(side=tk.LEFT)
+
+theme_toggle_button = tk.Button(
+    top_controls_frame,
+    text=f"Theme: {current_theme.title()}",
+    command=toggle_theme,
+    font=button_font,
+    bg=theme_value('button_bg'),
+    fg=theme_value('button_fg'),
+    activebackground=theme_value('button_active_bg'),
+    activeforeground=theme_value('button_fg'),
+    relief='flat',
+    cursor='hand2',
+    padx=12,
+    pady=5
+)
+theme_toggle_button.pack(side=tk.RIGHT, padx=(8, 0))
+
+guide_button = tk.Button(
+    top_controls_frame,
+    text='Guide',
+    command=show_guide,
+    font=button_font,
+    bg=theme_value('button_bg'),
+    fg=theme_value('button_fg'),
+    activebackground=theme_value('button_active_bg'),
+    activeforeground=theme_value('button_fg'),
+    relief='flat',
+    cursor='hand2',
+    padx=12,
+    pady=5
+)
+guide_button.pack(side=tk.RIGHT, padx=(8, 0))
+
+logout_button = tk.Button(
+    top_controls_frame,
+    text='Logout',
+    command=logout,
+    font=button_font,
+    bg=theme_value('button_bg'),
+    fg=theme_value('button_fg'),
+    activebackground=theme_value('button_active_bg'),
+    activeforeground=theme_value('button_fg'),
+    relief='flat',
+    cursor='hand2',
+    padx=12,
+    pady=5
+)
+logout_button.pack(side=tk.RIGHT, padx=(8, 0))
+
+action_frame = tk.Frame(main, bg=theme_value('window_bg'))
+
+graph_frame = tk.Frame(main, bg=theme_value('panel_bg'), bd=1, relief='solid')
+
+graph_title_label = tk.Label(
+    graph_frame,
+    text='Graph Controls',
+    font=('Segoe UI Semibold', 11),
+    bg=theme_value('panel_bg'),
+    fg=theme_value('panel_fg')
+)
+graph_title_label.pack(side=tk.LEFT, padx=(10, 8), pady=8)
 
 graph_trigger_button = tk.Button(
     graph_frame,
     text='Flash Graphs',
     command=show_graph_dropdown,
     font=('Segoe UI Semibold', 10),
-    bg='#4B7BEC',
-    fg='white',
-    activebackground='#3E68C8',
-    activeforeground='white',
+    bg=theme_value('button_bg'),
+    fg=theme_value('button_fg'),
+    activebackground=theme_value('button_active_bg'),
+    activeforeground=theme_value('button_fg'),
     relief='flat',
     cursor='hand2',
     padx=12,
@@ -1197,44 +1502,45 @@ graph_trigger_button.bind('<Enter>', show_graph_dropdown)
 
 graph_menu = tk.Menu(main, tearoff=0, bg='white', fg='#102542', activebackground='#DDE8FF', activeforeground='#102542')
 
-tk.Button(
+graph_prev_button = tk.Button(
     graph_frame,
     text='<',
     command=show_previous_graph,
     font=('Segoe UI Bold', 11),
     width=3,
-    bg='#DDE8FF',
-    fg='#102542',
+    bg=theme_value('action_bg'),
+    fg=theme_value('action_fg'),
     relief='flat',
     cursor='hand2'
-).pack(side=tk.LEFT, padx=(10, 4), pady=8)
+)
+graph_prev_button.pack(side=tk.LEFT, padx=(10, 4), pady=8)
 
-tk.Button(
+graph_next_button = tk.Button(
     graph_frame,
     text='>',
     command=show_next_graph,
     font=('Segoe UI Bold', 11),
     width=3,
-    bg='#DDE8FF',
-    fg='#102542',
+    bg=theme_value('action_bg'),
+    fg=theme_value('action_fg'),
     relief='flat',
     cursor='hand2'
-).pack(side=tk.LEFT, padx=(0, 8), pady=8)
+)
+graph_next_button.pack(side=tk.LEFT, padx=(0, 8), pady=8)
 
-graph_selected_label = tk.Label(graph_frame, text='Selected: None', font=label_font, bg='#DDEBFF', fg='#385170')
+graph_selected_label = tk.Label(graph_frame, text='Selected: None', font=label_font, bg=theme_value('panel_bg'), fg=theme_value('muted_fg'))
 graph_selected_label.pack(side=tk.LEFT, padx=4, pady=8)
 
-graph_status_label = tk.Label(graph_frame, text='0 / 0', font=label_font, bg='#DDEBFF', fg='#385170')
+graph_status_label = tk.Label(graph_frame, text='0 / 0', font=label_font, bg=theme_value('panel_bg'), fg=theme_value('muted_fg'))
 graph_status_label.pack(side=tk.LEFT, padx=4, pady=8)
 
-output_frame = tk.Frame(main, bg='#EEF4FF')
-output_frame.pack(fill=tk.BOTH, expand=True, padx=14, pady=(0, 14))
+output_frame = tk.Frame(main, bg=theme_value('window_bg'))
 
 text = Text(
     output_frame,
-    bg='#0B1D3A',
-    fg='#E9F1FF',
-    insertbackground='white',
+    bg=theme_value('output_bg'),
+    fg=theme_value('output_fg'),
+    insertbackground=theme_value('output_fg'),
     font=text_font,
     wrap='word',
     relief='flat',
@@ -1247,7 +1553,10 @@ scroll.config(command=text.yview)
 text.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
 scroll.pack(side=tk.RIGHT, fill=tk.Y)
 
+dashboard_sections = [header_frame, top_controls_frame, action_frame, graph_frame, output_frame]
 configure_graph_controls([])
+apply_theme()
+show_login_screen()
 
 main.mainloop()
 
