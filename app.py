@@ -568,40 +568,88 @@ For prediction:
 3. Click **Predict**.
 """
 
+APP_CSS = """
+#auth-hero {
+  text-align: center;
+  margin: 4px 0 14px 0;
+}
+#auth-hero h2 {
+  margin: 0;
+  font-size: 1.6rem;
+}
+#auth-hero p {
+  margin: 6px 0 0 0;
+  color: #5b6b85;
+}
+#auth-grid {
+  gap: 18px;
+}
+.auth-card {
+  border: 1px solid #dbe4f3;
+  border-radius: 14px;
+  padding: 14px;
+  background: #ffffff;
+  box-shadow: 0 4px 12px rgba(18, 38, 63, 0.06);
+}
+.auth-card h3 {
+  margin: 4px 0 10px 0;
+}
+#session-box textarea {
+  font-weight: 600;
+}
+#ops-header {
+  border: 1px solid #dbe4f3;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  background: #f8fbff;
+}
+"""
 
-with gr.Blocks(title="Bitcoin Scam Detection (Gradio)") as demo:
+
+with gr.Blocks(title="Bitcoin Scam Detection (Gradio)", css=APP_CSS, theme=gr.themes.Soft()) as demo:
     session_state = gr.State(init_session())
 
     gr.Markdown("# Bitcoin Scam Detection")
 
     with gr.Column(visible=True) as auth_page:
-        gr.Markdown("## Login / Signup")
-        guide_btn = gr.Button("Show Guide")
-        guide_markdown = gr.Markdown(GUIDE_TEXT, visible=False)
+        gr.HTML(
+            """
+            <div id="auth-hero">
+              <h2>Login / Signup</h2>
+              <p>Start from here, then the operations dashboard opens automatically.</p>
+            </div>
+            """
+        )
 
-        with gr.Group():
-            gr.Markdown("### Login")
-            with gr.Row():
+        with gr.Row(elem_id="auth-grid"):
+            with gr.Column(elem_classes=["auth-card"], scale=3):
+                gr.Markdown("### Login")
                 role = gr.Radio(["ADMIN", "USER"], value="ADMIN", label="Role")
-                username = gr.Textbox(label="Username")
-                password = gr.Textbox(label="Password", type="password")
-            login_btn = gr.Button("Login")
+                username = gr.Textbox(label="Username", placeholder="Enter username")
+                password = gr.Textbox(label="Password", type="password", placeholder="Enter password")
+                login_btn = gr.Button("Login", variant="primary")
+                login_status = gr.Textbox(
+                    label="Session Status",
+                    interactive=False,
+                    value="Please login.",
+                    elem_id="session-box",
+                )
 
-        with gr.Group():
-            gr.Markdown("### Signup (USER only)")
-            with gr.Row():
-                signup_username = gr.Textbox(label="New Username")
-                signup_password = gr.Textbox(label="New Password", type="password")
-                signup_confirm = gr.Textbox(label="Confirm Password", type="password")
-            signup_btn = gr.Button("Signup")
-            signup_status = gr.Textbox(label="Signup Status", interactive=False)
-
-        login_status = gr.Textbox(label="Session Status", interactive=False, value="Please login.")
+            with gr.Column(elem_classes=["auth-card"], scale=2):
+                gr.Markdown("### Signup (USER only)")
+                signup_username = gr.Textbox(label="New Username", placeholder="Create username")
+                signup_password = gr.Textbox(label="New Password", type="password", placeholder="Create password")
+                signup_confirm = gr.Textbox(label="Confirm Password", type="password", placeholder="Confirm password")
+                signup_btn = gr.Button("Signup")
+                signup_status = gr.Textbox(label="Signup Status", interactive=False)
+                guide_btn = gr.Button("Show Guide")
+                guide_markdown = gr.Markdown(GUIDE_TEXT, visible=False)
 
     with gr.Column(visible=False) as operations_page:
-        with gr.Row():
+        with gr.Row(elem_id="ops-header"):
             ops_role_status = gr.Markdown("Not logged in")
-            logout_btn = gr.Button("Logout")
+            logout_btn = gr.Button("Logout", variant="secondary")
 
         with gr.Tab("Admin Workflow"):
             dataset_file = gr.File(label="Upload Dataset CSV", file_types=[".csv"], type="filepath")
