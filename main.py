@@ -407,24 +407,20 @@ def show_graph_dropdown(event=None):
 
 def show_model_graph_dropdown(event, algorithm_name):
     filename_prefix = algorithm_name.replace(' ', '_')
-    graph_set = [
-        (
-            f"{algorithm_name} - Confusion Matrix",
-            lambda p=f"results/{filename_prefix}_confusion_matrix.png", t=f"{algorithm_name} - Confusion Matrix": plot_saved_image(p, t)
-        ),
-        (
-            f"{algorithm_name} - ROC Curve",
-            lambda p=f"results/{filename_prefix}_roc_curve.png", t=f"{algorithm_name} - ROC Curve": plot_saved_image(p, t)
-        ),
-    ]
     graph_options = [
         (
             'Confusion Matrix',
-            lambda: open_model_graph_set(graph_set, 0)
+            lambda: open_model_graph_direct(
+                f"results/{filename_prefix}_confusion_matrix.png",
+                f"{algorithm_name} - Confusion Matrix"
+            )
         ),
         (
             'ROC Curve',
-            lambda: open_model_graph_set(graph_set, 1)
+            lambda: open_model_graph_direct(
+                f"results/{filename_prefix}_roc_curve.png",
+                f"{algorithm_name} - ROC Curve"
+            )
         ),
     ]
 
@@ -436,9 +432,10 @@ def show_model_graph_dropdown(event, algorithm_name):
     menu.grab_release()
 
 
-def open_model_graph_set(graph_set, start_index):
-    configure_graph_controls(graph_set)
-    show_graph_by_index(start_index)
+def open_model_graph_direct(image_path, title):
+    fig = plot_saved_image(image_path, title)
+    if fig is not None:
+        display_graph_in_viewer(fig, title)
 
 
 def show_previous_graph():
