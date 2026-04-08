@@ -1066,8 +1066,6 @@ def require_training_ready():
             messagebox.showerror("Read the Guide", "Read the Guide")
             return False
     return True
-
-
 def authenticate(role):
     global active_login_window
     login_win = tk.Toplevel(main)
