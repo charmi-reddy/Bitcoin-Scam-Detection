@@ -119,12 +119,14 @@ def show_guide_content():
 def handle_login(role, username, password, session):
     session, status = login(role, username, password, session)
     if session.get("logged_in"):
+        prediction_visible = session.get("role") == "USER"
         return (
             session,
             status,
             gr.update(visible=False),
             gr.update(visible=True),
             f"Welcome, {session['role']}",
+            gr.update(visible=prediction_visible),
         )
     return (
         session,
@@ -132,6 +134,7 @@ def handle_login(role, username, password, session):
         gr.update(visible=True),
         gr.update(visible=False),
         "Not logged in",
+        gr.update(visible=False),
     )
 
 
@@ -143,6 +146,7 @@ def handle_logout(session):
         gr.update(visible=True),
         gr.update(visible=False),
         "Not logged in",
+        gr.update(visible=False),
     )
 
 
@@ -526,7 +530,7 @@ def open_model_graph(filename):
 
 
 def predict_testdata(test_file, session):
-    ok, msg = require_role(session, {"USER", "ADMIN"})
+    ok, msg = require_role(session, {"USER"})
     if not ok:
         return msg, None
     if test_file is None:
@@ -682,7 +686,7 @@ with gr.Blocks(title="Bitcoin Scam Detection (Gradio)", css=APP_CSS, theme=gr.th
             model_graph_image = gr.Image(label="Model Graph")
             model_graph_status = gr.Textbox(label="Model Graph Status", interactive=False)
 
-        with gr.Tab("Prediction"):
+        with gr.Tab("Prediction", visible=False) as prediction_tab:
             test_file = gr.File(label="Upload Test CSV", file_types=[".csv"], type="filepath")
             predict_btn = gr.Button("Predict")
             predict_status = gr.Textbox(label="Prediction Status", lines=8, interactive=False)
@@ -697,12 +701,12 @@ with gr.Blocks(title="Bitcoin Scam Detection (Gradio)", css=APP_CSS, theme=gr.th
     login_btn.click(
         handle_login,
         inputs=[role, username, password, session_state],
-        outputs=[session_state, login_status, auth_page, operations_page, ops_role_status],
+        outputs=[session_state, login_status, auth_page, operations_page, ops_role_status, prediction_tab],
     )
     logout_btn.click(
         handle_logout,
         inputs=[session_state],
-        outputs=[session_state, login_status, auth_page, operations_page, ops_role_status],
+        outputs=[session_state, login_status, auth_page, operations_page, ops_role_status, prediction_tab],
     )
 
     upload_btn.click(
