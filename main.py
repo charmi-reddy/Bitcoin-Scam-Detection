@@ -407,22 +407,56 @@ def show_graph_dropdown(event=None):
 
 def show_model_graph_dropdown(event, algorithm_name):
     filename_prefix = algorithm_name.replace(' ', '_')
-    graph_options = [
-        (
-            'Confusion Matrix',
-            lambda: open_model_graph_direct(
-                f"results/{filename_prefix}_confusion_matrix.png",
-                f"{algorithm_name} - Confusion Matrix"
+    graph_options = []
+
+    if os.path.isdir("results"):
+        model_files = sorted(
+            [f for f in os.listdir("results") if f.startswith(filename_prefix) and f.lower().endswith(".png")]
+        )
+
+        for image_name in model_files:
+            image_path = os.path.join("results", image_name)
+            readable_name = image_name.replace(filename_prefix + "_", "").replace(".png", "").replace("_", " ").title()
+            graph_title = f"{algorithm_name} - {readable_name}"
+            graph_options.append(
+                (
+                    readable_name,
+                    lambda p=image_path, t=graph_title: open_model_graph_direct(p, t)
+                )
             )
-        ),
-        (
-            'ROC Curve',
-            lambda: open_model_graph_direct(
-                f"results/{filename_prefix}_roc_curve.png",
-                f"{algorithm_name} - ROC Curve"
-            )
-        ),
-    ]
+
+        # Keep shared comparison charts visible from all model buttons.
+        shared_files = [
+            ("Model Performance Comparison", "model_performance_comparison.png"),
+            ("Model Performance Comparison (With Numbers)", "model_performance_comparison_with_numbers.png"),
+        ]
+        for label, shared_name in shared_files:
+            shared_path = os.path.join("results", shared_name)
+            if os.path.exists(shared_path):
+                graph_options.append(
+                    (
+                        label,
+                        lambda p=shared_path, t=label: open_model_graph_direct(p, t)
+                    )
+                )
+
+    if not graph_options:
+        graph_options = [
+            (
+                'Confusion Matrix',
+                lambda: open_model_graph_direct(
+                    f"results/{filename_prefix}_confusion_matrix.png",
+                    f"{algorithm_name} - Confusion Matrix"
+                )
+            ),
+            (
+                'ROC Curve',
+                lambda: open_model_graph_direct(
+                    f"results/{filename_prefix}_roc_curve.png",
+                    f"{algorithm_name} - ROC Curve"
+                )
+            ),
+        ]
 
     menu = tk.Menu(main, tearoff=0, bg='white', fg='#102542', activebackground='#DDE8FF', activeforeground='#102542')
     for label, command in graph_options:
