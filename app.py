@@ -343,6 +343,8 @@ def ensure_graph_viewer():
     graph_viewer_window.title("Graph Viewer")
     graph_viewer_window.geometry("1100x700")
     graph_viewer_window.configure(bg=theme_value('window_bg'))
+    graph_viewer_window.bind('<Left>', on_left_arrow)
+    graph_viewer_window.bind('<Right>', on_right_arrow)
 
     viewer_outer = tk.Frame(graph_viewer_window, bg=theme_value('window_bg'))
     viewer_outer.pack(fill=tk.BOTH, expand=True, padx=12, pady=12)
@@ -526,6 +528,20 @@ def show_previous_graph():
 
 def show_next_graph():
     show_graph_by_index(current_plot_index + 1)
+
+
+def on_left_arrow(event=None):
+    if current_plot_registry:
+        show_previous_graph()
+        return "break"
+    return None
+
+
+def on_right_arrow(event=None):
+    if current_plot_registry:
+        show_next_graph()
+        return "break"
+    return None
 
 def Train_Test_split():
 
@@ -1555,7 +1571,7 @@ dashboard_sections = [header_frame, top_controls_frame, action_frame, graph_fram
 configure_graph_controls([])
 apply_theme()
 show_login_screen()
+main.bind('<Left>', on_left_arrow)
+main.bind('<Right>', on_right_arrow)
 
 main.mainloop()
-
-
