@@ -1,4 +1,4 @@
-# Bitcoin Scam Detection
+# Message Based Bitcoin Scam Classification using Linguistic and Transaction Pattern Analysis
 
 A desktop dashboard built with Python and Tkinter to detect scam vs legit Bitcoin-related messages using multiple ML models.
 
